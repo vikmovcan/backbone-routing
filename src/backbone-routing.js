@@ -204,19 +204,34 @@ const Router = Metal.Class.extend(Backbone.Router.prototype, Backbone.Router).ex
    * @param {Array} [args]
    * @returns {Promise}
    */
-  _execute(callback, args) {
-    return Promise.resolve().then(() => {
-      if (Router._prevRoute instanceof Route) {
-        return Router._prevRoute.exit();
-      }
-    }).then(() => {
-      let route = Router._prevRoute = callback.apply(this, args);
-      if (route instanceof Route) {
-        route.router = this;
-        return route.enter(args);
-      }
-    });
-  },
+   _execute: function _execute(callback, args) {
+     var _this5 = this;
+
+     return Promise.resolve().then(function () {
+       if (Router._prevRoute instanceof Route) {
+         return Router._prevRoute.exit();
+       }
+     }).then(function () {
+       var route = callback.apply(_this5, args);
+
+       if (route instanceof Promise) {
+         route.then(function (resolveRoot) {
+           Router._prevRoute = resolveRoot;
+           if (resolveRoot instanceof Route) {
+             resolveRoot.router = _this5;
+             return resolveRoot.enter(args);
+           }
+         });
+       } else {
+         Router._prevRoute = route;
+
+         if (route instanceof Route) {
+           route.router = _this5;
+           return route.enter(args);
+         }
+       }
+     });
+   },
 
   /**
    * @private
